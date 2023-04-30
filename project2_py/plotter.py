@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 def main():
 	p = helpers.Simple1()
-	(x_hist_1, f_hist_1) = run_optimizer(project2.CMA_ES, p, np.array([2, 2]))
-	print(x_hist_1[-1])
+	(x_hist_1, f_hist_1) = run_optimizer(project2.CMA_ES, p, np.array([3, 3]))
+	#print(x_hist_1[-1])
 	#p = helpers.Simple2()
 	#(x_hist_2, f_hist_2) = run_optimizer(project1.gradient_descent, p, [-2, 1.7])
 	#p = helpers.Simple3()
@@ -42,14 +42,14 @@ def main():
 	ax1.contour(X,Y,Z, 100)
 	x_hist_1 = np.array(x_hist_1)
 	ax1.plot(x_hist_1[:,0],x_hist_1[:,1])
-	p = helpers.Simple1()
-	(x_hist_1b, f_hist_1b) = run_optimizer(project2.cross_entropy_method, p, np.array([0, 0]))
-	p = helpers.Simple1()
-	(x_hist_1c, f_hist_1c) = run_optimizer(project2.cross_entropy_method, p, np.array([0.5, 0.5]))
-	x_hist_1b = np.array(x_hist_1b)
-	ax1.plot(x_hist_1b[:,0],x_hist_1b[:,1])
-	x_hist_1c = np.array(x_hist_1c)
-	ax1.plot(x_hist_1c[:,0],x_hist_1c[:,1])
+	#p = helpers.Simple1()
+	#(x_hist_1b, f_hist_1b) = run_optimizer(project2.cross_entropy_method, p, np.array([0, 0]))
+	#p = helpers.Simple1()
+	#(x_hist_1c, f_hist_1c) = run_optimizer(project2.cross_entropy_method, p, np.array([0.5, 0.5]))
+	#x_hist_1b = np.array(x_hist_1b)
+	#ax1.plot(x_hist_1b[:,0],x_hist_1b[:,1])
+	#x_hist_1c = np.array(x_hist_1c)
+	#ax1.plot(x_hist_1c[:,0],x_hist_1c[:,1])
 	ax1.set_title('Simple1 Contour Plot')
 	x,y = np.meshgrid(X,Y)
 	ax1.imshow( ((x + np.square(y) - 1 <= 0) & (-x -y <= 0)).astype(int) , 
@@ -61,7 +61,7 @@ def main():
 
 
 def run_optimizer(optimizer, p, x0):
-    x_hist = optimizer(p.f, p.g, p.c, x0, p.n, p.count, p.prob)
+    x_best, x_hist = optimizer(p.f, p.g, p.c, x0, p.n, p.count, p.prob)
     f_hist = [p.f(j) for j in x_hist]
     return (x_hist, f_hist)
 

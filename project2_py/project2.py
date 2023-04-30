@@ -15,9 +15,9 @@ Note: Do not import any other modules here.
 import numpy as np
 import numpy.matlib
 
-params_table = {'simple1': [100, 20, 1], 'simple2': [100, 20, 1], 'simple3': [100, 80, 1], 'secret1': [100, 80, 1], 'secret2': [200, 200, 15]}
+params_table = {'simple1': [100, 20, 1], 'simple2': [100, 20, 1], 'simple3': [100, 80, 1], 'secret1': [100, 80, 1], 'secret2': [200, 200, 10]}
 
-CMA_params = {'secret2': 10}
+CMA_params = {'simple1': 1, 'secret2': 10, 'secret1': 100}
 
 
 def optimize(f, g, c, x0, n, count, prob):
@@ -36,11 +36,10 @@ def optimize(f, g, c, x0, n, count, prob):
         x_best (np.array): best selection of variables found
     """
     x_best = x0
-    if prob == 'secret2':
-        x_hist = CMA_ES(f, g, c, x0, n, count, prob)
+    if prob == 'secret2' or prob == 'secret1':
+        x_best, x_hist = CMA_ES(f, g, c, x0, n, count, prob)
     else:
-        x_hist = cross_entropy_method(f, g, c, x0, n, count, prob)
-    x_best = x_hist[-1]
+        x_best, x_hist = cross_entropy_method(f, g, c, x0, n, count, prob)
     return x_best
 
 
@@ -60,6 +59,7 @@ def CMA_ES(f,g,c,x0,n,count, prob):
     weights = weights / np.sum(weights)
     mueff = np.square(np.sum(weights)) / np.sum(np.square(weights))
 
+
     cc = (4+mueff/N) / (N+4 + 2*mueff/N)
     cs = (mueff+2) / (N+mueff+5)
     c1 = 2 / (np.square(N+1.3)+mueff)
@@ -76,6 +76,9 @@ def CMA_ES(f,g,c,x0,n,count, prob):
     rng = np.random.default_rng()
 
     eval_counter = 0
+
+    best_value = 1000000
+    x_best = x0
 
 
     while count() < n - (lambda_*2):
@@ -95,20 +98,36 @@ def CMA_ES(f,g,c,x0,n,count, prob):
         if len(samples_pruned) >= mu:
             samples = samples_pruned
             evals = evals_pruned
+        if(len(samples_pruned) > 0):
+            if np.sort(evals_pruned)[0] < best_value:
+                x_best = samples_pruned[np.argsort(evals_pruned)[0]]
+                best_value = np.sort(evals_pruned)[0]
 
         eval_counter += lambda_
-        
+
+        #samples = [[6.6024, 6.9158], [6.3449, 7.1803], [6.8784, 6.7896], [6.6291, 6.8360], [7.3035, 7.5837], [6.3367, 7.1660]]
+
+        #evals =  [-45.2760,  -45.1735,  -46.3167,  -44.9315,  -55.0030,  -45.0236]
+
         samples = np.array(samples)
         sort = np.argsort(evals)
         evals = np.array([evals[j] for j in sort[0:mu]])
         xold = xmean
         xmean = samples[sort[0:mu]].T @ weights
 
-        ps = (1-cs)*ps + np.sqrt(cs*(2-cs)*mueff) * invsqrtC * (xmean-xold) / sigma
+        x_hist.append(samples[sort[0]])
+
+        ps = (1-cs)*ps + np.sqrt(cs*(2-cs)*mueff) * invsqrtC @ (xmean-xold) / sigma
         hsig = np.linalg.norm(ps)/ np.sqrt(1-np.power((1-cs),(2*eval_counter/lambda_))) /chiN < (1.4 + 2/(N+1))
         pc = (1-cc)*pc + hsig *  np.sqrt(cc*(2-cc)*mueff) * (xmean-xold) / sigma;
 
+        #print(ps)
+        #print(hsig)
+        #print(pc)
+        #print()
+
         artmp = (1/sigma) * (samples[sort[0:mu]] - np.matlib.repmat(xold,mu,1));
+
         #print(artmp)
         #print(artmp @ artmp.T)
         #print(artmp.T @ artmp)
@@ -116,26 +135,41 @@ def CMA_ES(f,g,c,x0,n,count, prob):
         #print(samples)
         #print(np.sum([weights[i] * np.outer(((samples[sort[i]] - xold)/sigma), ((samples[sort[i]] - xold)/sigma)) for i in range(mu)],axis=0))
         #print()
-        
-        C = (1-c1-cmu) * C + c1 * (pc*pc.T + (1-hsig) * cc*(2-cc) * C) + cmu * artmp.T @ np.diag(weights) @ artmp
+        #print(cmu * artmp.T @ np.diag(weights) @ artmp)
+        C = (1-c1-cmu) * C + c1 * (np.outer(pc,pc) + (1-hsig) * cc*(2-cc) * C) + cmu * artmp.T @ np.diag(weights) @ artmp
         sigma = sigma * np.exp((cs/damps)*(np.linalg.norm(ps)/chiN - 1))
+
+        #print(sigma)
+        #print(C)
 
         C = np.triu(C) + np.triu(C,1).T
         D,B = np.linalg.eig(C)
         #print(D)
-        #rint(B)
-        for i in range(len(D)):
-            if D[i] < 0:
-                D[i] = -D[i]
-                B[i] = -B[i]
+        #B[0][1] = -B[0][1]
+        #B[1][1] = -B[1][1]
+        #print()
+        #print(B)
+
+        #for i in range(len(D)):
+        #    if D[i] < 0:
+        #        D[i] = -D[i]
+        #        B[i] = -B[i]
+        #test = 1/D
         D = np.sqrt(D)
-        invsqrtC = B * np.diag(1/D) * B.T
+        #print(D)
+        invsqrtC = B @ np.diag(1/D) @ B.T
+
+        #print(C)
+        #print(invsqrtC)
+
+
 
         #print(samples[sort[0]])
-        if(len(samples_pruned) > 0):
-            x_hist.append(samples_pruned[np.argsort(evals_pruned)[0]])
+        
+        #print(samples[sort[0]])
 
-    return x_hist
+    print(x_best)
+    return x_best, x_hist
 
 
 def cross_entropy_method(f,g,c, x0, n, count, prob):
@@ -148,37 +182,44 @@ def cross_entropy_method(f,g,c, x0, n, count, prob):
     mean = x0
     #print('original: ' + str(x0))
     #print("constraint on original: " + str(c(x0)))
+    x_best = x0
+    best_value = 1000000
     while count() < n - (m*2):
-        mean, cov = cross_entropy_step(f, c, mean, cov, m, m_elite, inflation, rng)
-        x_hist.append(mean)
-    return x_hist
+        samples = rng.multivariate_normal(mean, cov, m)
+        samples_pruned = []
+        evals = []
+        evals_full = []
+        for x in samples:
+            inside, value = constrained_f_infpenalty(f, c, x)
+            evals_full.append(value)
+            if inside:
+                samples_pruned.append(x)
+                evals.append(value)
+                #print(j)
+
+        #print()
+        if(len(samples_pruned) < 2):
+            sort = np.argsort(evals_full)[0:m_elite]
+            elite_samples = [samples[i] for i in sort]
+            mean = np.average(elite_samples, axis=0, weights=calculate_weights([evals_full[i] for i in sort]))
+            #print('outside boundary')
+        else:
+            sort = np.argsort(evals)[0:m_elite]
+            elite_samples = [samples_pruned[i] for i in sort]
+            mean = np.average(elite_samples, axis=0, weights=calculate_weights([evals[i] for i in sort]))
+            #print('inside boundary')
+        #print(elite_samples)
+        cov = np.cov(elite_samples, rowvar=0)
+        x_hist.append(samples[np.argsort(evals_full)[0]])
+        if(len(samples_pruned) > 0):
+            if np.sort(evals)[0] < best_value:
+                x_best = samples_pruned[np.argsort(evals)[0]]
+                best_value = np.sort(evals)[0]
+    #print(x_best)
+    return x_best, x_hist
 
 def cross_entropy_step(f, c, mean, cov, m, m_elite, inflation, rng):
-    samples = rng.multivariate_normal(mean, cov, m)
-    samples_pruned = []
-    evals = []
-    evals_full = []
-    for x in samples:
-        inside, value = constrained_f_infpenalty(f, c, x)
-        evals_full.append(value)
-        if inside:
-            samples_pruned.append(x)
-            evals.append(value)
-            #print(j)
-
-    #print()
-    if(len(samples_pruned) < 2):
-        sort = np.argsort(evals_full)[0:m_elite]
-        elite_samples = [samples[i] for i in sort]
-        mean = np.average(elite_samples, axis=0, weights=calculate_weights([evals_full[i] for i in sort]))
-        #print('outside boundary')
-    else:
-        sort = np.argsort(evals)[0:m_elite]
-        elite_samples = [samples_pruned[i] for i in sort]
-        mean = np.average(elite_samples, axis=0, weights=calculate_weights([evals[i] for i in sort]))
-        #print('inside boundary')
-    #print(elite_samples)
-    cov = np.cov(elite_samples, rowvar=0)
+    
     return mean,cov
 
 def calculate_weights(evals):
