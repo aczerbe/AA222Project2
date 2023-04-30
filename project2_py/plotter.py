@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 
 def main():
 	p = helpers.Simple1()
-	(x_hist_1, f_hist_1) = run_optimizer(project2.cross_entropy_method, p, np.array([0, 0]))
+	(x_hist_1, f_hist_1) = run_optimizer(project2.cross_entropy_method, p, np.array([2, 2]))
 	#p = helpers.Simple2()
 	#(x_hist_2, f_hist_2) = run_optimizer(project1.gradient_descent, p, [-2, 1.7])
 	#p = helpers.Simple3()
 	#(x_hist_3, f_hist_3) = run_optimizer(project1.gradient_descent, p, [1,1,1,1])
 
 
-	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+	fig, ((ax1, ax2)) = plt.subplots(1, 2)
 	ax2.plot(f_hist_1)
 	ax2.set_title('Simple1 Convergence Plot')
 	ax2.set_xlabel('Iterations')
@@ -42,7 +42,7 @@ def main():
 	x_hist_1 = np.array(x_hist_1)
 	ax1.plot(x_hist_1[:,0],x_hist_1[:,1])
 	p = helpers.Simple1()
-	(x_hist_1b, f_hist_1b) = run_optimizer(project2.cross_entropy_method, p, np.array([1, 1]))
+	(x_hist_1b, f_hist_1b) = run_optimizer(project2.cross_entropy_method, p, np.array([0, 0]))
 	p = helpers.Simple1()
 	(x_hist_1c, f_hist_1c) = run_optimizer(project2.cross_entropy_method, p, np.array([0.5, 0.5]))
 	x_hist_1b = np.array(x_hist_1b)

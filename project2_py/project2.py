@@ -14,7 +14,7 @@ Note: Do not import any other modules here.
 '''
 import numpy as np
 
-params_table = {'simple1': [100, 5], 'simple2': [100, 10], 'simple3': [100, 10], 'secret1': [100, 10], 'secret2': [100, 10]}
+params_table = {'simple1': [100, 10, 1], 'simple2': [100, 10, 1], 'simple3': [100, 10, 1], 'secret1': [100, 10, 3], 'secret2': [100, 10, 3]}
 
 def optimize(f, g, c, x0, n, count, prob):
     """
@@ -41,33 +41,59 @@ def cross_entropy_method(f,g,c, x0, n, count, prob):
     x_hist = [x0]
     m = params_table[prob][0]
     m_elite = params_table[prob][1]
+    inflation = params_table[prob][2]
     rng = np.random.default_rng()
     cov = np.eye(len(x0))
     mean = x0
     #print('original: ' + str(x0))
     #print("constraint on original: " + str(c(x0)))
-
     while count() < n - (m*2):
-        samples = rng.multivariate_normal(mean, cov, m)
-        
-        samples_pruned = []
-        for j in samples:
-            if in_bounds(j, c):
-                samples_pruned.append(j)
-                #print(j)
-
-        #print()
-        evals = [f(j) for j in samples_pruned]
-        elite_samples = [samples_pruned[i] for i in np.argsort(evals)[0:m_elite]]
-        #print(elite_samples)
-        if(len(elite_samples) < 2):
-            cov = cov * 1.5
-        else:
-            mean = np.mean(elite_samples, axis=0)
-            cov = np.cov(elite_samples, rowvar=0)
-            x_hist.append(mean)
-        #print(mean)
+        mean, cov = cross_entropy_step(f, c, mean, cov, m, m_elite, inflation, rng)
+        x_hist.append(mean)
     return x_hist
+
+def cross_entropy_step(f, c, mean, cov, m, m_elite, inflation, rng):
+    samples = rng.multivariate_normal(mean, cov, m)
+    samples_pruned = []
+    evals = []
+    evals_full = []
+    for x in samples:
+        inside, value = constrained_f_infpenalty(f, c, x)
+        evals_full.append(value)
+        if inside:
+            samples_pruned.append(x)
+            evals.append(value)
+            #print(j)
+
+    #print()
+    if(len(samples_pruned) < 2):
+        elite_samples = [samples[i] for i in np.argsort(evals_full)[0:m_elite]]
+    else:
+        elite_samples = [samples_pruned[i] for i in np.argsort(evals)[0:m_elite]]
+    #print(elite_samples)
+    mean = np.mean(elite_samples, axis=0)
+    cov = np.cov(elite_samples, rowvar=0)
+    return mean,cov
+
+def cross_entropy_step_old(f, c, mean, cov, m, m_elite, inflation, rng):
+    samples = rng.multivariate_normal(mean, cov, m)
+    samples_pruned = []
+    for j in samples:
+        if in_bounds(j, c):
+            samples_pruned.append(j)
+            #print(j)
+
+    #print()
+    if(len(samples_pruned) < 2):
+        cov = cov * inflation
+        return mean,cov, 0
+    evals = [f(j) for j in samples_pruned]
+    elite_samples = [samples_pruned[i] for i in np.argsort(evals)[0:m_elite]]
+    #print(elite_samples)
+    mean = np.mean(elite_samples, axis=0)
+    cov = np.cov(elite_samples, rowvar=0)
+    return mean,cov, 1
+    #print(mean)
 
 
 
@@ -78,8 +104,13 @@ def gradient_descent(f,g,x0,n,count, prob):
         x_hist.append(x_hist[-1] - alpha * g(x_hist[-1]))
     return x_hist
 
-def constrained_f_inv(f, c, rho, x):
-    return f(x) + -1/(rho * c(x))
+def constrained_f_infpenalty(f, c, x):
+    k = c(x)
+    if not any(t > 0 for t in k):
+        return True, f(x)
+    else:
+        return 0, sum(1000 * k  * np.array([t > 0 for t in k]))
+
 
 def in_bounds(x, c):
     a = c(x)
