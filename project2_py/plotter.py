@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def main():
 	p = helpers.Simple1()
-	(x_hist_1, f_hist_1) = run_optimizer(project2.cross_entropy_method, p, np.array([2, 2]))
+	(x_hist_1, f_hist_1) = run_optimizer(project2.cross_entropy_method, p, np.array([7, 7]))
 	#p = helpers.Simple2()
 	#(x_hist_2, f_hist_2) = run_optimizer(project1.gradient_descent, p, [-2, 1.7])
 	#p = helpers.Simple3()
@@ -31,8 +31,8 @@ def main():
 
 	
 	contourSize = [300,300]
-	X = np.linspace(-3,3,contourSize[0])
-	Y = np.linspace(-3,3,contourSize[1])
+	X = np.linspace(-3,7,contourSize[0])
+	Y = np.linspace(-3,7,contourSize[1])
 	Z = np.zeros(contourSize)
 	p = helpers.Simple1()
 	for i in range(len(X)):

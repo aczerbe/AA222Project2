@@ -14,7 +14,7 @@ Note: Do not import any other modules here.
 '''
 import numpy as np
 
-params_table = {'simple1': [100, 20, 1], 'simple2': [100, 10, 1], 'simple3': [100, 10, 1], 'secret1': [100, 10, 3], 'secret2': [100, 10, 3]}
+params_table = {'simple1': [100, 20, 80], 'simple2': [100, 20, 80], 'simple3': [100, 80, 80], 'secret1': [100, 80, 80], 'secret2': [50, 45, 80]}
 
 def optimize(f, g, c, x0, n, count, prob):
     """
@@ -95,7 +95,7 @@ def constrained_f_infpenalty(f, c, x):
         return True, f(x)
     else:
         positives = k  * np.array([t > 0 for t in k])
-        return 0, sum(positives + np.square(positives))
+        return 0, 100*sum(np.array([t > 0 for t in k]))+ sum(positives + np.square(positives))
 
 
 def in_bounds(x, c):
