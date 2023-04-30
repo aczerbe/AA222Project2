@@ -14,7 +14,7 @@ Note: Do not import any other modules here.
 '''
 import numpy as np
 
-params_table = {'simple1': [100, 10, 1], 'simple2': [100, 10, 1], 'simple3': [100, 10, 1], 'secret1': [100, 10, 3], 'secret2': [100, 10, 3]}
+params_table = {'simple1': [100, 20, 1], 'simple2': [100, 10, 1], 'simple3': [100, 10, 1], 'secret1': [100, 10, 3], 'secret2': [100, 10, 3]}
 
 def optimize(f, g, c, x0, n, count, prob):
     """
@@ -67,35 +67,20 @@ def cross_entropy_step(f, c, mean, cov, m, m_elite, inflation, rng):
 
     #print()
     if(len(samples_pruned) < 2):
-        elite_samples = [samples[i] for i in np.argsort(evals_full)[0:m_elite]]
+        sort = np.argsort(evals_full)[0:m_elite]
+        elite_samples = [samples[i] for i in sort]
+        mean = np.average(elite_samples, axis=0, weights=calculate_weights([evals_full[i] for i in sort]))
     else:
-        elite_samples = [samples_pruned[i] for i in np.argsort(evals)[0:m_elite]]
+        sort = np.argsort(evals)[0:m_elite]
+        elite_samples = [samples_pruned[i] for i in sort]
+        mean = np.average(elite_samples, axis=0, weights=calculate_weights([evals[i] for i in sort]))
     #print(elite_samples)
-    mean = np.mean(elite_samples, axis=0)
     cov = np.cov(elite_samples, rowvar=0)
     return mean,cov
 
-def cross_entropy_step_old(f, c, mean, cov, m, m_elite, inflation, rng):
-    samples = rng.multivariate_normal(mean, cov, m)
-    samples_pruned = []
-    for j in samples:
-        if in_bounds(j, c):
-            samples_pruned.append(j)
-            #print(j)
-
-    #print()
-    if(len(samples_pruned) < 2):
-        cov = cov * inflation
-        return mean,cov, 0
-    evals = [f(j) for j in samples_pruned]
-    elite_samples = [samples_pruned[i] for i in np.argsort(evals)[0:m_elite]]
-    #print(elite_samples)
-    mean = np.mean(elite_samples, axis=0)
-    cov = np.cov(elite_samples, rowvar=0)
-    return mean,cov, 1
-    #print(mean)
-
-
+def calculate_weights(evals):
+    minumum = min(evals)
+    return [1/(.001 + k - minumum) for k in evals]
 
 def gradient_descent(f,g,x0,n,count, prob):
     alpha = alpha_table[prob]
@@ -109,7 +94,8 @@ def constrained_f_infpenalty(f, c, x):
     if not any(t > 0 for t in k):
         return True, f(x)
     else:
-        return 0, sum(1000 * k  * np.array([t > 0 for t in k]))
+        positives = k  * np.array([t > 0 for t in k])
+        return 0, sum(positives + np.square(positives))
 
 
 def in_bounds(x, c):

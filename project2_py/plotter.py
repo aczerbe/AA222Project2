@@ -30,7 +30,7 @@ def main():
 	# ax4.set_ylabel('Value')
 
 	
-	contourSize = [50,50]
+	contourSize = [300,300]
 	X = np.linspace(-3,3,contourSize[0])
 	Y = np.linspace(-3,3,contourSize[1])
 	Z = np.zeros(contourSize)
@@ -50,6 +50,9 @@ def main():
 	x_hist_1c = np.array(x_hist_1c)
 	ax1.plot(x_hist_1c[:,0],x_hist_1c[:,1])
 	ax1.set_title('Simple1 Contour Plot')
+	x,y = np.meshgrid(X,Y)
+	ax1.imshow( ((x + np.square(y) - 1 <= 0) & (-x -y <= 0)).astype(int) , 
+                extent=(x.min(),x.max(),y.min(),y.max()),origin="lower", cmap="Greys", alpha = 0.3);
 
 	# plt.tight_layout()
 
