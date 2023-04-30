@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 
 def main():
 	p = helpers.Simple1()
-	(x_hist_1, f_hist_1) = run_optimizer(project2.cross_entropy_method, p, np.array([7, 7]))
+	(x_hist_1, f_hist_1) = run_optimizer(project2.CMA_ES, p, np.array([2, 2]))
+	print(x_hist_1[-1])
 	#p = helpers.Simple2()
 	#(x_hist_2, f_hist_2) = run_optimizer(project1.gradient_descent, p, [-2, 1.7])
 	#p = helpers.Simple3()
