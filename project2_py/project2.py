@@ -17,7 +17,7 @@ import numpy.matlib
 
 params_table = {'simple1': [100, 20, 1], 'simple2': [100, 20, 1], 'simple3': [100, 80, 1], 'secret1': [100, 80, 1], 'secret2': [200, 200, 10]}
 
-CMA_params = {'simple1': 1, 'secret2': 10, 'secret1': 100}
+CMA_params = {'simple1': 1, 'simple2': 1, 'simple3': 1, 'secret2': 10, 'secret1': .3, 'ellipse4D': 1}
 
 
 def optimize(f, g, c, x0, n, count, prob):
@@ -36,10 +36,10 @@ def optimize(f, g, c, x0, n, count, prob):
         x_best (np.array): best selection of variables found
     """
     x_best = x0
-    if prob == 'secret2' or prob == 'secret1':
-        x_best, x_hist = CMA_ES(f, g, c, x0, n, count, prob)
-    else:
-        x_best, x_hist = cross_entropy_method(f, g, c, x0, n, count, prob)
+    #if prob == 'simple1' or prob == 'secret2' or prob == 'secret1':
+    x_best, x_hist = CMA_ES(f, g, c, x0, n, count, prob)
+    #else:
+    #    x_best, x_hist = cross_entropy_method(f, g, c, x0, n, count, prob)
     return x_best
 
 
@@ -82,8 +82,6 @@ def CMA_ES(f,g,c,x0,n,count, prob):
 
 
     while count() < n - (lambda_*2):
-        #print()
-        #print(sigma * C)
         samples = rng.multivariate_normal(xmean, sigma * C, lambda_)
         
         samples_pruned = []
@@ -105,10 +103,6 @@ def CMA_ES(f,g,c,x0,n,count, prob):
 
         eval_counter += lambda_
 
-        #samples = [[6.6024, 6.9158], [6.3449, 7.1803], [6.8784, 6.7896], [6.6291, 6.8360], [7.3035, 7.5837], [6.3367, 7.1660]]
-
-        #evals =  [-45.2760,  -45.1735,  -46.3167,  -44.9315,  -55.0030,  -45.0236]
-
         samples = np.array(samples)
         sort = np.argsort(evals)
         evals = np.array([evals[j] for j in sort[0:mu]])
@@ -121,52 +115,15 @@ def CMA_ES(f,g,c,x0,n,count, prob):
         hsig = np.linalg.norm(ps)/ np.sqrt(1-np.power((1-cs),(2*eval_counter/lambda_))) /chiN < (1.4 + 2/(N+1))
         pc = (1-cc)*pc + hsig *  np.sqrt(cc*(2-cc)*mueff) * (xmean-xold) / sigma;
 
-        #print(ps)
-        #print(hsig)
-        #print(pc)
-        #print()
-
         artmp = (1/sigma) * (samples[sort[0:mu]] - np.matlib.repmat(xold,mu,1));
 
-        #print(artmp)
-        #print(artmp @ artmp.T)
-        #print(artmp.T @ artmp)
-        #print(sort[0:mu])
-        #print(samples)
-        #print(np.sum([weights[i] * np.outer(((samples[sort[i]] - xold)/sigma), ((samples[sort[i]] - xold)/sigma)) for i in range(mu)],axis=0))
-        #print()
-        #print(cmu * artmp.T @ np.diag(weights) @ artmp)
         C = (1-c1-cmu) * C + c1 * (np.outer(pc,pc) + (1-hsig) * cc*(2-cc) * C) + cmu * artmp.T @ np.diag(weights) @ artmp
         sigma = sigma * np.exp((cs/damps)*(np.linalg.norm(ps)/chiN - 1))
 
-        #print(sigma)
-        #print(C)
-
         C = np.triu(C) + np.triu(C,1).T
         D,B = np.linalg.eig(C)
-        #print(D)
-        #B[0][1] = -B[0][1]
-        #B[1][1] = -B[1][1]
-        #print()
-        #print(B)
-
-        #for i in range(len(D)):
-        #    if D[i] < 0:
-        #        D[i] = -D[i]
-        #        B[i] = -B[i]
-        #test = 1/D
         D = np.sqrt(D)
-        #print(D)
         invsqrtC = B @ np.diag(1/D) @ B.T
-
-        #print(C)
-        #print(invsqrtC)
-
-
-
-        #print(samples[sort[0]])
-        
-        #print(samples[sort[0]])
 
     print(x_best)
     return x_best, x_hist
@@ -239,7 +196,8 @@ def constrained_f_infpenalty(f, c, x):
         return True, f(x)
     else:
         positives = k  * np.array([t > 0 for t in k])
-        return 0, 100*sum(np.array([t > 0 for t in k]))+ sum(positives + np.square(positives))
+        return 0, 1000 + sum(positives + np.square(positives))
+        #return 0, 100*sum(np.array([t > 0 for t in k]))+ sum(positives + np.square(positives))
 
 def in_bounds(x, c):
     a = c(x)

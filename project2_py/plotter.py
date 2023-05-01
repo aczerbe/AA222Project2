@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 
 def main():
 	p = helpers.Simple1()
-	(x_hist_1, f_hist_1) = run_optimizer(project2.CMA_ES, p, np.array([3, 3]))
+	p = helpers.Ellipse4D()
+	(x_hist_1, f_hist_1) = run_optimizer(project2.CMA_ES, p, np.array([50, 50,50,50]))
+
+
 	#print(x_hist_1[-1])
 	#p = helpers.Simple2()
 	#(x_hist_2, f_hist_2) = run_optimizer(project1.gradient_descent, p, [-2, 1.7])
@@ -15,7 +18,10 @@ def main():
 
 
 	fig, ((ax1, ax2)) = plt.subplots(1, 2)
-	ax2.plot(f_hist_1)
+	c_hist_1 = [p.c(j) for j in x_hist_1]
+	print(min(c_hist_1))
+	ax2.plot(c_hist_1)
+	#ax2.plot(f_hist_1)
 	ax2.set_title('Simple1 Convergence Plot')
 	ax2.set_xlabel('Iterations')
 	ax2.set_ylabel('Value')
@@ -32,8 +38,8 @@ def main():
 
 	
 	contourSize = [300,300]
-	X = np.linspace(-3,7,contourSize[0])
-	Y = np.linspace(-3,7,contourSize[1])
+	X = np.linspace(-3,50,contourSize[0])
+	Y = np.linspace(-3,50,contourSize[1])
 	Z = np.zeros(contourSize)
 	p = helpers.Simple1()
 	for i in range(len(X)):

@@ -136,6 +136,33 @@ class Simple1(ConstrainedOptimizationProblem):
             -x[0] - x[1]
             ])
 
+class Ellipse4D(ConstrainedOptimizationProblem):
+    
+    def __init__(self):
+        self._xdim = 4
+        self._cdim = 1
+        self.center = np.array([0,0,0,0])
+        self.invlengths = np.array([1/1,1/2,1/3,1/4])
+        self._prob = 'ellipse4D'
+        self._n = 2000
+        self._reset()
+
+    def x0(self):
+        return np.random.rand(self._xdim) * 2.0
+
+    def _wrapped_f(self, x):
+        return 1/np.linalg.norm(x)
+
+    def _wrapped_g(self, x):
+        return np.array([
+            -x[1],
+            -x[0],
+                ])
+
+    def _wrapped_c(self,x):
+        #print(x)
+        return np.array([np.sum(np.square((x-self.center)) * self.invlengths) - 1])
+
 
 
 class Simple2(ConstrainedOptimizationProblem):
