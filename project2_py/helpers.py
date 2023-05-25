@@ -142,7 +142,7 @@ class Ellipse4D(ConstrainedOptimizationProblem):
         self._xdim = 4
         self._cdim = 1
         self.center = np.array([0,0,0,0])
-        self.invlengths = np.array([1/1,1/2,1/3,1/4])
+        self.invlengths = np.array([1/100,1/200,1/300,1/400])
         self._prob = 'ellipse4D'
         self._n = 2000
         self._reset()
@@ -161,7 +161,8 @@ class Ellipse4D(ConstrainedOptimizationProblem):
 
     def _wrapped_c(self,x):
         #print(x)
-        return np.array([np.sum(np.square((x-self.center)) * self.invlengths) - 1])
+        #print(str(x) + " " + str(c))
+        return np.array([np.sum(np.square((x-self.center) * self.invlengths)) - 1])
 
 
 

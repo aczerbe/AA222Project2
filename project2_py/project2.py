@@ -15,9 +15,12 @@ Note: Do not import any other modules here.
 import numpy as np
 import numpy.matlib
 
-params_table = {'simple1': [100, 20, 1], 'simple2': [100, 20, 1], 'simple3': [100, 80, 1], 'secret1': [100, 80, 1], 'secret2': [200, 200, 10]}
+params_table = {'simple1': [100, 20, 1], 'simple2': [100, 20, 5], 'simple3': [100, 80, 1], 'secret1': [100, 80, 1], 'secret2': [200, 200, 10]}
 
-CMA_params = {'simple1': 1, 'simple2': 1, 'simple3': 1, 'secret2': 10, 'secret1': .3, 'ellipse4D': 1}
+CMA_params = {'simple1': 1, 'simple2': 1, 'simple3': 1, 'secret2': 10, 'secret1': 3000, 'ellipse4D': 1} #2000 for secret 1: 780
+
+alpha_table = {'ellipse4D': 2500, 'simple3': .35, 'secret1': 150} # 100 works, score 901
+beta_table = {'ellipse4D': .3, 'simple3': .3, 'secret1': .3}
 
 
 def optimize(f, g, c, x0, n, count, prob):
@@ -36,12 +39,92 @@ def optimize(f, g, c, x0, n, count, prob):
         x_best (np.array): best selection of variables found
     """
     x_best = x0
-    #if prob == 'simple1' or prob == 'secret2' or prob == 'secret1':
-    x_best, x_hist = CMA_ES(f, g, c, x0, n, count, prob)
-    #else:
-    #    x_best, x_hist = cross_entropy_method(f, g, c, x0, n, count, prob)
+    if prob == 'secret1' or prob == 'simple3':
+        x_best, x_hist = grad_descend_constraint(f, g, c, x0, n, count, prob)
+    else:
+        x_best, x_hist = CMA_ES(f, g, c, x0, n, count, prob)
     return x_best
 
+def mom_grad_descend_constraint(f,g, c, x0, n, count, prob, h=0.001):
+    alpha = 2000 #alpha_table[prob]
+    beta = 0.6 #beta_table[prob]
+    x_hist = [x0]
+    v = np.zeros_like(x0)
+    while count() < n:
+        x = x_hist[-1]
+        base = c(x)
+        if base < 0:
+            #print('Pushing to CMA_ES at count: ' + str(count()) + " and location: " + str(x))
+            print('Mom method count when done: ' + str(count()))
+            #return x, x_hist
+            return CMA_ES(f,g,c,x,n,count,prob)
+        gradient = np.zeros_like(x)
+        for i in range(len(x)):
+            point = x 
+            point[i] = point[i] + h
+            test_val = c(point)
+            if test_val < 0:
+                return point, x_hist
+            gradient[i] = (test_val - base)/h
+        #print(gradient)
+        v = beta * v - alpha * gradient
+        x_hist.append(x_hist[-1] + v)
+    return x_hist[-1], x_hist
+
+# def grad_descend_constraint(f,g, c, x0, n, count, prob, h=0.001):
+#     alpha = alpha_table[prob]
+#     beta = beta_table[prob]
+#     x_hist = [x0]
+#     v = np.zeros_like(x0)
+#     while count() < n:
+#         x = x_hist[-1]
+#         base = c(x)
+#         #print(base)
+#         if base < 0:
+#             #print('Pushing to CMA_ES at count: ' + str(count()) + " and location: " + str(x))
+#             print('Grad method count when done: ' + str(count()))
+#             return x, x_hist
+#             return CMA_ES(f,g,c,x,n,count,prob)
+#         gradient = np.zeros_like(x)
+#         for i in range(len(x)):
+#             point = x 
+#             point[i] = point[i] + h
+#             test_val = c(point)
+#             if test_val < 0:
+#                 return point, x_hist
+#             gradient[i] = (test_val - base)/h
+#         #print(gradient)
+#         #print()
+#         v = beta * v - alpha * gradient
+#         x_hist.append(x_hist[-1] + v)
+#     return x_hist[-1], x_hist
+
+
+def grad_descend_constraint(f,g, c, x0, n, count, prob, h=0.001):
+    alpha = alpha_table[prob]
+    #print(h)
+    x_hist = [x0]
+    while count() < n:
+        x = x_hist[-1]
+        base = c(x)
+        #print(base)
+        if base < 0:
+            #print('Pushing to CMA_ES at count: ' + str(count()) + " and location: " + str(x))
+            #print('Grad count when done: ' + str(count()))
+            #return x, x_hist
+            return CMA_ES(f,g,c,x,n,count,prob)
+        gradient = np.zeros_like(x)
+        for i in range(len(x)):
+            point = x
+            point[i] = point[i] + h
+            #print(point)
+            test_val = c(point)
+            if test_val < 0:
+                return point, x_hist
+            gradient[i] = (test_val - base)/h
+        #print(gradient)
+        x_hist.append(x_hist[-1] - alpha * gradient)
+    return x_hist[-1], x_hist
 
 
 def CMA_ES(f,g,c,x0,n,count, prob):
@@ -125,7 +208,7 @@ def CMA_ES(f,g,c,x0,n,count, prob):
         D = np.sqrt(D)
         invsqrtC = B @ np.diag(1/D) @ B.T
 
-    print(x_best)
+    #print(x_best)
     return x_best, x_hist
 
 
@@ -183,12 +266,6 @@ def calculate_weights(evals):
     minumum = min(evals)
     return [1/(.001 + k - minumum) for k in evals]
 
-def gradient_descent(f,g,x0,n,count, prob):
-    alpha = alpha_table[prob]
-    x_hist = [x0]
-    while count() < n:
-        x_hist.append(x_hist[-1] - alpha * g(x_hist[-1]))
-    return x_hist
 
 def constrained_f_infpenalty(f, c, x):
     k = c(x)
